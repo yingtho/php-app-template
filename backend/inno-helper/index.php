@@ -5,7 +5,7 @@ class InnoHelper
     private $vars = array();
 
     public function webProfilesAppUrl($obj) {
-        return sprintf('%s/companies/%s/buckets/%s/profiles/%s', $this->vars->apiUrl, $obj->groupId, $obj->bucketName, $obj->profileId);
+        return sprintf('%s/v1/companies/%s/buckets/%s/profiles/%s', $this->vars->apiUrl, $obj->groupId, $obj->bucketName, $obj->profileId);
     }
 
     private function profilesAppUrl($obj) {
@@ -13,7 +13,7 @@ class InnoHelper
     }
 
     private function settingsAppUrl($obj) {
-        return sprintf('%s/companies/%s/buckets/%s/apps/%s/custom?app_key=%s', $this->vars->apiUrl, $obj->groupId, $obj->bucketName, $obj->appName, $obj->appKey);
+        return sprintf('%s/v1/companies/%s/buckets/%s/apps/%s/custom?app_key=%s', $this->vars->apiUrl, $obj->groupId, $obj->bucketName, $obj->appName, $obj->appKey);
     }
 
     private function request($params, $callback) {

@@ -13,13 +13,13 @@ $inno = new InnoHelper();
 $cache = new SimpleCache(getenv('INNO_DB_URL'));
 
 $vars = new \stdClass();
-$vars->bucketName = getenv('INNO_BUCKET');
+$vars->bucketName = getenv('INNO_BUCKET_ID');
 $vars->appKey = getenv('INNO_APP_KEY');
-$vars->appName = getenv('INNO_APP_NAME');
+$vars->appName = getenv('INNO_APP_ID');
 $vars->groupId = getenv('INNO_COMPANY_ID');
-$vars->apiUrl = getenv('INNO_API_URL');
+$vars->apiUrl = getenv('INNO_API_HOST');
 $inno->setVars($vars);
-$inno->setVar('collectApp', getenv('INNO_APP_NAME'));
+$inno->setVar('collectApp', getenv('INNO_APP_ID'));
 
 $app->get('/', function() {
     return '';
