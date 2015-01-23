@@ -4,12 +4,12 @@ class InnoHelper
 {
     private $vars = array();
 
-    public function webProfilesAppUrl($obj) {
+    public function webProfileAppUrl($obj) {
         return sprintf('%s/v1/companies/%s/buckets/%s/profiles/%s', $this->vars->apiUrl, $obj->groupId, $obj->bucketName, $obj->profileId);
     }
 
-    private function profilesAppUrl($obj) {
-        return sprintf('%s?app_key=%s', $this->webProfilesAppUrl($obj), $obj->appKey);
+    private function profileAppUrl($obj) {
+        return sprintf('%s?app_key=%s', $this->webProfileAppUrl($obj), $obj->appKey);
     }
 
     private function settingsAppUrl($obj) {
@@ -61,7 +61,8 @@ class InnoHelper
      * Parse start session data
      */
     public function getDatas($request, $callback) {
-        if(strpos($request->headers->get('Content-Type'), 'application/json') === 0) {
+        $contentType = $request->getContentType();
+        if ($contentType === 'json') {
             $data = json_decode($request->getContent(), true);
         }
         
@@ -103,12 +104,13 @@ class InnoHelper
     /**
      * Get settings application
      */
-    public function getSettings($params, $callback) {
+    public function getSettings(\stdClass $params, $callback) {
         $obj = new \stdClass();
-        $obj->groupId = $params->vars->groupId;
-        $obj->bucketName = $params->vars->bucketName;
-        $obj->appKey = $params->vars->appKey;
-        $obj->appName = $params->vars->appName;
+        $vars = $params->vars;
+        $obj->groupId = $vars->groupId;
+        $obj->bucketName = $vars->bucketName;
+        $obj->appKey = $vars->appKey;
+        $obj->appName = $vars->appName;
         $url = $this->settingsAppUrl($obj);
 
         return $this->request(array('url' => $url), function($response) use($callback) {
@@ -123,13 +125,14 @@ class InnoHelper
     /**
      * Update data profile by id
      */
-    public function setAttributes($params, $callback) {
+    public function setAttributes(\stdClass $params, $callback) {
         $obj = new \stdClass();
-        $obj->groupId = $params->vars->groupId;
-        $obj->bucketName = $params->vars->bucketName;
-        $obj->appKey = $params->vars->appKey;
-        $obj->profileId = $params->vars->profileId;
-        $url = $this->profilesAppUrl($obj);
+        $vars = $params->vars;
+        $obj->groupId = $vars->groupId;
+        $obj->bucketName = $vars->bucketName;
+        $obj->appKey = $vars->appKey;
+        $obj->profileId = $vars->profileId;
+        $url = $this->profileAppUrl($obj);
         $params = array(
             'url' => $url, 
             'type' => 'post',
@@ -138,10 +141,10 @@ class InnoHelper
                 'Accept: application/json'
             ),
             'body' => array(
-                'id' => $params->vars->profileId,
+                'id' => $vars->profileId,
                 'attributes' => array(array(
-                    'collectApp' => $params->vars->collectApp,
-                    'section' => $params->vars->section,
+                    'collectApp' => $vars->collectApp,
+                    'section' => $vars->section,
                     'data' => $params->data
                 ))
             )
@@ -154,13 +157,14 @@ class InnoHelper
     /**
      * Get data profile by id
      */
-    public function getAttributes($params, $callback) {
+    public function getAttributes(\stdClass $params, $callback) {
         $obj = new \stdClass();
-        $obj->groupId = $params->vars->groupId;
-        $obj->bucketName = $params->vars->bucketName;
-        $obj->appKey = $params->vars->appKey;
-        $obj->profileId = $params->vars->profileId;
-        $url = $this->profilesAppUrl($obj);
+        $vars = $params->vars;
+        $obj->groupId = $vars->groupId;
+        $obj->bucketName = $vars->bucketName;
+        $obj->appKey = $vars->appKey;
+        $obj->profileId = $vars->profileId;
+        $url = $this->profileAppUrl($obj);
 
         return $this->request(array('url' => $url), function($response) use($callback) {
             $body = json_decode($response);

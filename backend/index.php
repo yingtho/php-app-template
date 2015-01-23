@@ -2,9 +2,9 @@
 
 use Symfony\Component\HttpFoundation\Request;
 
-require('simple-cache.php');
-require('inno-helper/index.php');
-require('vendor/autoload.php');
+require_once('simple-cache.php');
+require_once('inno-helper/index.php');
+require_once('vendor/autoload.php');
 
 $app = new Silex\Application();
 $app['debug'] = true;
@@ -26,8 +26,14 @@ $app->get('/', function() {
 });
 
 $app->post('/', function(Request $request) use($app, $inno, $cache, $vars) {
-    return $inno->getDatas($request, function($error, $data = array()) use($app, $request, $cache, $inno, $vars) {
-        if(!isset($data['event']['createdAt']) || !isset($data['data']) || !isset($data['event']['definitionId']) || !isset($data['profile']['id'])) {
+    return $inno->getDatas($request, function($error, $data = array()) use($app, $cache, $inno, $vars) {
+        if($error) {
+            return $app->json(array(
+                'error' => $error
+            ));
+        }
+        $dataIsOk = isset($data['event']['createdAt'], $data['data'], $data['event']['definitionId'], $data['profile']['id']);
+        if(!$dataIsOk) {
             return $app->json(array(
                 'error' => 'Stream data is not correct'
             ));
@@ -37,15 +43,25 @@ $app->post('/', function(Request $request) use($app, $inno, $cache, $vars) {
             'values' => $data['data'],
             'event' => $data['event']['definitionId'],
             'profile' => $data['profile']['id'],
-            'link' => $inno->webProfilesAppUrl($vars)
+            'link' => $inno->webProfileAppUrl($vars)
         )));
         return $inno->getSettings((object)array(
             'vars' => $inno->getVars()
-        ), function ($error, $settings) use($app, $request, $inno) {
+        ), function ($error, $settings = array()) use($app, $inno) {
+            if($error) {
+                return $app->json(array(
+                    'error' => $error
+                ));
+            }
             return $inno->setAttributes((object)array(
                 'vars' => $inno->getVars(),
                 'data' => $settings
-            ), function ($error) use($app, $request, $settings) {
+            ), function ($error) use($app, $settings) {
+                if($error) {
+                    return $app->json(array(
+                        'error' => $error
+                    ));
+                }
                 return $app->json(array(
                     'error' => null,
                     'data' => $settings
@@ -59,7 +75,7 @@ $app->post('/', function(Request $request) use($app, $inno, $cache, $vars) {
 $app->get('/last-ten-values', function() use($app, $cache) {
     $values = $cache->get();
     if (count($values) > 10) {
-        $values = array_slice($values, -10, 10);
+        $values = array_slice($values, -10);
     }
     $cache->set($values);
     return $app->json(array(
