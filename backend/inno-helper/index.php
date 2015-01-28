@@ -282,7 +282,7 @@ class InnoHelper
         $keys = array_merge(get_object_vars($main), get_object_vars($overrides));
         $vars = array();
         foreach ($keys as $k=>$v) {
-            $vars[$k] = isset($overrides[$k])?:$main[$k];
+            $vars[$k] = isset($overrides->$k)?:$main->$k;
         }
         return (object)$vars;
     }
