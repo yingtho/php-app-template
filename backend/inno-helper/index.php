@@ -15,12 +15,13 @@ class InnoHelper
     /**
      * Create URL to certain profile
      * @example http://api.innomdc.com/v1/companies/4/buckets/testbucket/profiles/vze0bxh4qpso67t2dxfc7u81a5nxvefc
-     * @param object|array $params
+     * @param object|array $params=null
      * @return string
      */
-    public function webProfileAppUrl($params) {
-        $params = (object)$params;
-        return sprintf('%s/v1/companies/%s/buckets/%s/profiles/%s', $this->vars->apiUrl, $params->groupId, $params->bucketName, $params->profileId);
+    public function webProfileAppUrl($params = null) {
+        $vars = $this->getVars();
+        $params = is_null($params) ? $vars : (object)$params;
+        return sprintf('%s/v1/companies/%s/buckets/%s/profiles/%s', $vars->apiUrl, $params->groupId, $params->bucketName, $params->profileId);
     }
 
     /**
@@ -29,8 +30,8 @@ class InnoHelper
      * @param object|array $params
      * @return string
      */
-    private function profileAppUrl($params) {
-        $params = (object)$params;
+    private function profileAppUrl($params = null) {
+        $params = is_null($params) ? $this->getVars() : (object)$params;
         return sprintf('%s?app_key=%s', $this->webProfileAppUrl($params), $params->appKey);
     }
 
@@ -40,9 +41,10 @@ class InnoHelper
      * @param object|array $params
      * @return string
      */
-    private function settingsAppUrl($params) {
-        $params = (object)$params;
-        return sprintf('%s/v1/companies/%s/buckets/%s/apps/%s/custom?app_key=%s', $this->getVars()->apiUrl, $params->groupId, $params->bucketName, $params->appName, $params->appKey);
+    private function settingsAppUrl($params = null) {
+        $vars = $this->getVars();
+        $params = is_null($params) ? $vars : (object)$params;
+        return sprintf('%s/v1/companies/%s/buckets/%s/apps/%s/custom?app_key=%s', $vars->apiUrl, $params->groupId, $params->bucketName, $params->appName, $params->appKey);
     }
 
     /**
@@ -116,11 +118,11 @@ class InnoHelper
 
     /**
      * Parse start session data
-     * @param $request
+     * @param string $content
      * @return object
      */
-    public function getDatas($request) {
-        $data = $this->parseStreamData($request->getContent());
+    public function getDatas($content) {
+        $data = $this->parseStreamData($content);
 
         $this->setVar('profileId', $data->profile->id);
         $this->setVar('collectApp', $data->session->collectApp);
