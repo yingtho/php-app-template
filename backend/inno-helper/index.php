@@ -88,7 +88,7 @@ class InnoHelper
      *      appKey: '8HJ3hnaxErdJJ62H',
      *      appName: 'testapp',
      *      groupId: '4',
-     *      apiUrl: 'http://app.innomdc.com',
+     *      apiUrl: 'http://api.innomdc.com',
      *      collectApp: 'web',
      *      section: 'testsection',
      *      profileId: 'omrd9lsa70bqukicsctlcvcu97xwehgm'
@@ -191,7 +191,7 @@ class InnoHelper
             'groupId'       => $vars->groupId,
             'bucketName'    => $vars->bucketName,
             'appKey'        => $vars->appKey,
-            'appName'     => $vars->appName
+            'appName'       => $vars->appName
         ));
 
         $response = $this->request(array('url' => $url));
