@@ -2,21 +2,55 @@
 
 class InnoHelper
 {
-    private $vars = array();
+    /**
+     * Assoc array with environment vars
+     * @var object
+     */
+    private $vars;
 
-    public function webProfileAppUrl($obj) {
-        return sprintf('%s/v1/companies/%s/buckets/%s/profiles/%s', $this->vars->apiUrl, $obj->groupId, $obj->bucketName, $obj->profileId);
+    public function __construct() {
+        $this->setVars(array());
     }
 
-    private function profileAppUrl($obj) {
-        return sprintf('%s?app_key=%s', $this->webProfileAppUrl($obj), $obj->appKey);
+    /**
+     * Create URL to certain profile
+     * @example http://api.innomdc.com/v1/companies/4/buckets/testbucket/profiles/vze0bxh4qpso67t2dxfc7u81a5nxvefc
+     * @param object|array $params
+     * @return string
+     */
+    public function webProfileAppUrl($params) {
+        $params = (object)$params;
+        return sprintf('%s/v1/companies/%s/buckets/%s/profiles/%s', $this->vars->apiUrl, $params->groupId, $params->bucketName, $params->profileId);
     }
 
-    private function settingsAppUrl($obj) {
-        return sprintf('%s/v1/companies/%s/buckets/%s/apps/%s/custom?app_key=%s', $this->vars->apiUrl, $obj->groupId, $obj->bucketName, $obj->appName, $obj->appKey);
+    /**
+     * Create URL to certain profile using App key
+     * @example http://api.innomdc.com/v1/companies/4/buckets/testbucket/profiles/vze0bxh4qpso67t2dxfc7u81a5nxvefc?app_key=8HJ3hnaxErdJJ62H
+     * @param object|array $params
+     * @return string
+     */
+    private function profileAppUrl($params) {
+        $params = (object)$params;
+        return sprintf('%s?app_key=%s', $this->webProfileAppUrl($params), $params->appKey);
     }
 
-    private function request($params, $callback) {
+    /**
+     * Create URL to app settings
+     * @example http://api.innomdc.com/v1/companies/4/buckets/testbucket/apps/testapp/custom?app_key=8HJ3hnaxErdJJ62H
+     * @param object|array $params
+     * @return string
+     */
+    private function settingsAppUrl($params) {
+        $params = (object)$params;
+        return sprintf('%s/v1/companies/%s/buckets/%s/apps/%s/custom?app_key=%s', $this->getVars()->apiUrl, $params->groupId, $params->bucketName, $params->appName, $params->appKey);
+    }
+
+    /**
+     * Make a http request
+     * @param array $params
+     * @return mixed
+     */
+    private function request($params) {
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_POST, 0);
         switch (isset($params['type']) ? $params['type'] : 'get') {
@@ -41,101 +75,153 @@ class InnoHelper
         $response = curl_exec($curl);
         curl_close ($curl);
         
-        return $callback($response);
+        return $response;
     }
 
     /**
-     * Working with vars
+     * Get environment vars
+     * @example
+     * {
+     *      bucketName: 'testbucket',
+     *      appKey: '8HJ3hnaxErdJJ62H',
+     *      appName: 'testapp',
+     *      groupId: '4',
+     *      apiUrl: 'http://app.innomdc.com',
+     *      collectApp: 'web',
+     *      section: 'testsection',
+     *      profileId: 'omrd9lsa70bqukicsctlcvcu97xwehgm'
+     * }
+     * @return object
      */
     public function getVars() {
         return $this->vars;
     }
-    public function setVars($obj) {
-        $this->vars = $obj;
+
+    /**
+     * Set environment vars
+     * @param object|array $vars
+     */
+    public function setVars($vars) {
+        $this->vars = (object)$vars;
     }
+
+    /**
+     * Set environment var by name
+     * @param string $name
+     * @param mixed $value
+     */
     public function setVar($name, $value) {
         $this->vars->{$name} = $value;
     }
 
     /**
      * Parse start session data
+     * @param $request
+     * @return object
      */
-    public function getDatas($request, $callback) {
-        $contentType = $request->getContentType();
-        if ($contentType === 'json') {
-            $data = json_decode($request->getContent(), true);
+    public function getDatas($request) {
+        $data = $this->parseStreamData($request->getContent());
+
+        $this->setVar('profileId', $data->profile->id);
+        $this->setVar('collectApp', $data->session->collectApp);
+        $this->setVar('section', $data->session->session);
+
+        return $data;
+    }
+
+    /**
+     * @param mixed $rawData
+     * @return object
+     * @throws ErrorException
+     */
+    public function parseStreamData ($rawData) {
+        $data = $rawData;
+        if (!is_object($data)) {
+            $data = json_decode($data, true);
         }
-        
-        if(!isset($data['profile'])) {
-            return $callback(new \ErrorException('Profile not found'));
+
+        if (!isset($data['profile'])) {
+            throw new \ErrorException('Profile not found');
         }
         $profile = $data['profile'];
 
+        if(!isset($profile['id'])) {
+            throw new \ErrorException('Profile id not found');
+        }
+
         if(!isset($profile['sessions'][0])) {
-            return $callback(new \ErrorException('Session not found'));
+            throw new \ErrorException('Session not found');
         }
         $session = $profile['sessions'][0];
 
         if(!isset($session['collectApp'])) {
-            return $callback(new \ErrorException('CollectApp not found'));
+            throw new \ErrorException('CollectApp not found');
         }
-        $this->setVar('collectApp', $session['collectApp']);
 
         if(!isset($session['section'])) {
-            return $callback(new \ErrorException('Section not found'));
+            throw new \ErrorException('Section not found');
         }
-        $this->setVar('section', $session['section']);
 
         if(!isset($session['events'][0]['data'])) {
-            return $callback(new \ErrorException('Data not set'));
+            throw new \ErrorException('Data not set');
         }
-        if(!isset($profile['id'])) {
-            return $callback(new \ErrorException('Profile id not found'));
-        }
-        $this->setVar('profileId', $profile['id']);
 
-        return $callback(null, array(
-            'profile' => $profile, 
-            'session' => $session, 
-            'event' => $session['events'][0], 
-            'data' => $session['events'][0]['data']));
+        $result = array(
+            'profile'   => $profile,
+            'session'   => $session,
+            'event'     => $session['events'][0],
+            'data'      => $session['events'][0]['data']
+        );
+
+        return (object)$result;
     }
 
     /**
-     * Get settings application
+     * Get application settings
+     * @param object|array $params=null
+     * @return mixed
+     * @throws ErrorException
      */
-    public function getSettings(\stdClass $params, $callback) {
-        $obj = new \stdClass();
-        $vars = $params->vars;
-        $obj->groupId = $vars->groupId;
-        $obj->bucketName = $vars->bucketName;
-        $obj->appKey = $vars->appKey;
-        $obj->appName = $vars->appName;
-        $url = $this->settingsAppUrl($obj);
+    public function getSettings($params = null) {
+        $params = (object)$params;
+        $vars = $this->mergeVars($this->getVars(), $params);
+        $url = $this->settingsAppUrl(array(
+            'groupId'       => $vars->groupId,
+            'bucketName'    => $vars->bucketName,
+            'appKey'        => $vars->appKey,
+            'appName'     => $vars->appName
+        ));
 
-        return $this->request(array('url' => $url), function($response) use($callback) {
-            $body = json_decode($response);
-            if(!isset($body->custom)) {
-                return $callback(new \ErrorException('Custom settings not found'));
-            }
-            return $callback(null, $body->custom);
-        });
+        $response = $this->request(array('url' => $url));
+        $body = json_decode($response);
+        if(!isset($body->custom)) {
+            throw new \ErrorException('Custom settings not found');
+        }
+
+        return $body->custom;
     }
 
     /**
-     * Update data profile by id
+     * Update attributes of the profile
+     * @param object|array $attributes
+     * @param object|array $params=null
+     * @return mixed
      */
-    public function setAttributes(\stdClass $params, $callback) {
-        $obj = new \stdClass();
-        $vars = $params->vars;
-        $obj->groupId = $vars->groupId;
-        $obj->bucketName = $vars->bucketName;
-        $obj->appKey = $vars->appKey;
-        $obj->profileId = $vars->profileId;
-        $url = $this->profileAppUrl($obj);
-        $params = array(
-            'url' => $url, 
-            'type' => 'post',
+    public function setAttributes($attributes, $params = null) {
+        $attributes = (object)$attributes;
+        $params = (object)$params;
+        $vars = $this->mergeVars($this->getVars(), $params);
+
+        $url = $this->profileAppUrl(array(
+            'groupId'       => $vars->groupId,
+            'bucketName'    => $vars->bucketName,
+            'appKey'        => $vars->appKey,
+            'profileId'     => $vars->profileId
+        ));
+
+        $requestParams = array(
+            'url'   => $url,
+            'type'  => 'post',
             'headers' => array(
                 'Content-Type: application/json',
                 'Accept: application/json'
@@ -143,40 +229,59 @@ class InnoHelper
             'body' => array(
                 'id' => $vars->profileId,
                 'attributes' => array(array(
-                    'collectApp' => $vars->collectApp,
-                    'section' => $vars->section,
-                    'data' => $params->data
+                    'collectApp'    => $vars->collectApp,
+                    'section'       => $vars->section,
+                    'data'          => $attributes
                 ))
             )
         );
-        return $this->request($params, function($response) use($callback) {
-            return $callback(null);
-        });
+        return $this->request($requestParams);
     }
 
     /**
-     * Get data profile by id
+     * Get attributes of the profile
+     * @param object|array $params=null
+     * @return array
+     * @throws ErrorException
      */
-    public function getAttributes(\stdClass $params, $callback) {
-        $obj = new \stdClass();
-        $vars = $params->vars;
-        $obj->groupId = $vars->groupId;
-        $obj->bucketName = $vars->bucketName;
-        $obj->appKey = $vars->appKey;
-        $obj->profileId = $vars->profileId;
-        $url = $this->profileAppUrl($obj);
+    public function getAttributes($params = null) {
+        $params = (object)$params;
+        $vars = $this->mergeVars($this->getVars(), $params);
 
-        return $this->request(array('url' => $url), function($response) use($callback) {
-            $body = json_decode($response);
-            
-            if(!isset($body->profile)) {
-                return $callback(new \ErrorException('Profile not found'));
-            }
-            $attributes = array();
-            if (!empty($body->profile->attributes)) {
-                $attributes = $body->profile->attributes;
-            }
-            return $callback(null, $attributes);
-        });
+        $url = $this->profileAppUrl(array(
+            'groupId'       => $vars->groupId,
+            'bucketName'    => $vars->bucketName,
+            'appKey'        => $vars->appKey,
+            'profileId'     => $vars->profileId
+        ));
+
+        $response = $this->request(array('url' => $url));
+
+        $body = json_decode($response);
+
+        if(!isset($body->profile)) {
+            throw new \ErrorException('Profile not found');
+        }
+        $attributes = array();
+        if (!empty($body->profile->attributes)) {
+            $attributes = $body->profile->attributes;
+        }
+        return $attributes;
+    }
+
+    /**
+     * @param object|array $main
+     * @param object|array $overrides
+     * @return object
+     */
+    private function mergeVars($main, $overrides) {
+        $main = (object)$main;
+        $overrides = (object)$overrides;
+        $keys = array_merge(get_object_vars($main), get_object_vars($overrides));
+        $vars = array();
+        foreach ($keys as $k=>$v) {
+            $vars[$k] = isset($overrides[$k])?:$main[$k];
+        }
+        return (object)$vars;
     }
 }
