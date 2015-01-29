@@ -27,7 +27,7 @@ $app->get('/', function() {
 
 $app->post('/', function(Request $request) use($app, $inno, $cache) {
     try {
-        $data = $inno->getDatas($request->getContent());
+        $data = $inno->getStreamData($request->getContent());
     } catch (\ErrorException $error) {
         return $app->json(array(
             'error' => $error
