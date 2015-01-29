@@ -1,22 +1,31 @@
 <?php
 
+
+namespace Innometrics;
+
+/**
+ * InnoHelper TODO add description
+ * @copyright 2015 Innometrics
+ */
 class InnoHelper
 {
     /**
-     * Assoc array with environment vars
+     * Object with environment vars
      * @var object
      */
-    private $vars;
+    protected $vars;
 
     public function __construct() {
         $this->setVars(array());
     }
 
     /**
-     * Create URL to certain profile
-     * @example http://api.innomdc.com/v1/companies/4/buckets/testbucket/profiles/vze0bxh4qpso67t2dxfc7u81a5nxvefc
-     * @param object|array $params=null
-     * @return string
+     * Form URL to certain profile
+     * @param object|array $params=null Custom parameters to form URL
+     * @return string URL to make API request
+     *
+     * <b>Example:</b>
+     *      Example: http://api.innomdc.com/v1/companies/4/buckets/testbucket/profiles/vze0bxh4qpso67t2dxfc7u81a5nxvefc
      */
     public function webProfileAppUrl($params = null) {
         $vars = $this->getVars();
@@ -25,37 +34,46 @@ class InnoHelper
     }
 
     /**
-     * Create URL to certain profile using App key
-     * @example http://api.innomdc.com/v1/companies/4/buckets/testbucket/profiles/vze0bxh4qpso67t2dxfc7u81a5nxvefc?app_key=8HJ3hnaxErdJJ62H
-     * @param object|array $params
-     * @return string
+     * Form URL to certain profile using App key
+     * @param object|array $params=null Custom parameters to form URL
+     * @return string URL to make API request
+     *
+     * <b>Example:</b>
+     *      http://api.innomdc.com/v1/companies/4/buckets/testbucket/profiles/vze0bxh4qpso67t2dxfc7u81a5nxvefc?app_key=8HJ3hnaxErdJJ62H
      */
-    private function profileAppUrl($params = null) {
+    protected function profileAppUrl($params = null) {
         $params = is_null($params) ? $this->getVars() : (object)$params;
         return sprintf('%s?app_key=%s', $this->webProfileAppUrl($params), $params->appKey);
     }
 
     /**
-     * Create URL to app settings
-     * @example http://api.innomdc.com/v1/companies/4/buckets/testbucket/apps/testapp/custom?app_key=8HJ3hnaxErdJJ62H
-     * @param object|array $params
-     * @return string
+     * Form URL to app settings
+     * @param object|array $params=null Custom parameters to form URL
+     * @return string URL to make API request
+     *
+     * <b>Example:</b>
+     *      http://api.innomdc.com/v1/companies/4/buckets/testbucket/apps/testapp/custom?app_key=8HJ3hnaxErdJJ62H
      */
-    private function settingsAppUrl($params = null) {
+    protected function settingsAppUrl($params = null) {
         $vars = $this->getVars();
         $params = is_null($params) ? $vars : (object)$params;
         return sprintf('%s/v1/companies/%s/buckets/%s/apps/%s/custom?app_key=%s', $vars->apiUrl, $params->groupId, $params->bucketName, $params->appName, $params->appKey);
     }
 
     /**
-     * Make a http request
-     * @param array $params
-     * @return mixed
+     * Internal method to make http requests, curl used
+     * @param array $params List of parameters to configure request
+     * * $params['url']     - string, required.
+     * * $params['type']    - string. Defines type of request. Possible values: 'POST' or 'GET' ('GET' used by default)
+     * * $params['body']    - string. Request body.
+     * * $params['qs']      - array. Key=>value pairs used to create "query" part of URL
+     * * $params['headers'] - array. Custom HTTP headers
+     * @return string|bool string with response or false if request failed
      */
-    private function request($params) {
+    protected function request($params) {
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_POST, 0);
-        switch (isset($params['type']) ? $params['type'] : 'get') {
+        switch (strtolower(isset($params['type']) ? : 'get')) {
             case 'post':
                 curl_setopt($curl, CURLOPT_POST, 1);
                 if(!empty($params['body'])) {
@@ -82,18 +100,19 @@ class InnoHelper
 
     /**
      * Get environment vars
-     * @example
-     * {
-     *      bucketName: 'testbucket',
-     *      appKey: '8HJ3hnaxErdJJ62H',
-     *      appName: 'testapp',
-     *      groupId: '4',
-     *      apiUrl: 'http://api.innomdc.com',
-     *      collectApp: 'web',
-     *      section: 'testsection',
-     *      profileId: 'omrd9lsa70bqukicsctlcvcu97xwehgm'
-     * }
      * @return object
+     *
+     * <b>Example:</b>
+     *      {
+     *          bucketName: 'testbucket',
+     *          appKey: '8HJ3hnaxErdJJ62H',
+     *          appName: 'testapp',
+     *          groupId: '4',
+     *          apiUrl: 'http://api.innomdc.com',
+     *          collectApp: 'web',
+     *          section: 'testsection',
+     *          profileId: 'omrd9lsa70bqukicsctlcvcu97xwehgm'
+     *      }
      */
     public function getVars() {
         return $this->vars;
@@ -108,20 +127,20 @@ class InnoHelper
     }
 
     /**
-     * Set environment var by name
-     * @param string $name
-     * @param mixed $value
+     * Set environment variable by name
+     * @param string $name Variable name
+     * @param mixed $value Variable value
      */
     public function setVar($name, $value) {
         $this->vars->{$name} = $value;
     }
 
     /**
-     * Parse start session data
+     * Parse start session data and set found environment variables
      * @param string $content
-     * @return object
+     * @return object Object with properties: profile, session, events, data
      */
-    public function getDatas($content) {
+    public function getStreamData($content) {
         $data = $this->parseStreamData($content);
 
         $this->setVar('profileId', $data->profile->id);
@@ -132,9 +151,11 @@ class InnoHelper
     }
 
     /**
-     * @param mixed $rawData
-     * @return object
-     * @throws ErrorException
+     * Extract stream data from raw content.
+     * Tries to find profile and its related parts
+     * @param mixed $rawData Data to parse
+     * @return object Object with properties: profile, session, events, data
+     * @throws \ErrorException If profile or some its required parts are not found exception will be thrown
      */
     public function parseStreamData ($rawData) {
         $data = $rawData;
@@ -180,9 +201,9 @@ class InnoHelper
 
     /**
      * Get application settings
-     * @param object|array $params=null
-     * @return mixed
-     * @throws ErrorException
+     * @param object|array $params=null Custom parameters to get settings
+     * @return array
+     * @throws \ErrorException If settings are not found exception will be thrown
      */
     public function getSettings($params = null) {
         $params = (object)$params;
@@ -205,9 +226,9 @@ class InnoHelper
 
     /**
      * Update attributes of the profile
-     * @param object|array $attributes
-     * @param object|array $params=null
-     * @return mixed
+     * @param object|array $attributes Key=>value pairs with attributes
+     * @param object|array $params=null Custom parameters to update settings
+     * @return bool|string String with response or false if request failed
      */
     public function setAttributes($attributes, $params = null) {
         $attributes = (object)$attributes;
@@ -242,9 +263,9 @@ class InnoHelper
 
     /**
      * Get attributes of the profile
-     * @param object|array $params=null
-     * @return array
-     * @throws ErrorException
+     * @param object|array $params=null Custom parameters to update settings
+     * @return array Profile attributes
+     * @throws \ErrorException If profile not found in request response exception will be thrown
      */
     public function getAttributes($params = null) {
         $params = (object)$params;
@@ -272,11 +293,25 @@ class InnoHelper
     }
 
     /**
+     * Helper method to merge 2 object/assoc array to one object
+     * Values in $overrides will overwrite values in $main if they have same keys
      * @param object|array $main
      * @param object|array $overrides
      * @return object
+     * 
+     * <b>Example:</b>
+     *      $a = array('a' => 1, 'b' => 2);
+     *      $b = (object)array('b' => 10, 'c' => 'asd');
+     *      $helper->mergeVars($a, $b);
+     *      ------->
+     *      stdClass Object
+     *       (
+     *           [a] => 1
+     *           [b] => 10
+     *           [c] => 'asd'
+     *       )
      */
-    private function mergeVars($main, $overrides) {
+    protected function mergeVars($main, $overrides) {
         $main = (object)$main;
         $overrides = (object)$overrides;
         $keys = array_merge(get_object_vars($main), get_object_vars($overrides));
