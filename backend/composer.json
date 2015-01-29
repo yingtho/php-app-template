@@ -1,5 +1,6 @@
-{
+{getDatas
     "require": {
-        "silex/silex": "~1.1"
+        "silex/silex": "~1.1",
+        "innometrics/helper": "*"
     }
 }

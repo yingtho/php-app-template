@@ -1,15 +1,15 @@
 <?php
 
 use Symfony\Component\HttpFoundation\Request;
+use Innometrics\Helper;
 
 require_once('simple-cache.php');
-require_once('inno-helper/index.php');
 require_once('vendor/autoload.php');
 
 $app = new Silex\Application();
 $app['debug'] = true;
 
-$inno = new InnoHelper();
+$inno = new Helper();
 $cache = new SimpleCache(getenv('INNO_DB_URL'));
 
 $inno->setVars(array(
@@ -27,7 +27,7 @@ $app->get('/', function() {
 
 $app->post('/', function(Request $request) use($app, $inno, $cache) {
     try {
-        $data = $inno->getDatas($request->getContent());
+        $data = $inno->getStreamData($request->getContent());
     } catch (\ErrorException $error) {
         return $app->json(array(
             'error' => $error
