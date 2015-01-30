@@ -12,12 +12,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/Innometrics/php-inno-helper.git",
-                "reference": "680308829e1c92889c9428b26c241b2f04944db4"
+                "reference": "2444fad13b8e2d0a1f6c8217df7be7a6fe08495e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Innometrics/php-inno-helper/zipball/680308829e1c92889c9428b26c241b2f04944db4",
-                "reference": "680308829e1c92889c9428b26c241b2f04944db4",
+                "url": "https://api.github.com/repos/Innometrics/php-inno-helper/zipball/2444fad13b8e2d0a1f6c8217df7be7a6fe08495e",
+                "reference": "2444fad13b8e2d0a1f6c8217df7be7a6fe08495e",
                 "shasum": ""
             },
             "require": {
@@ -33,7 +33,7 @@
             "notification-url": "https://packagist.org/downloads/",
             "description": "Innometrics helper",
             "homepage": "http://www.innometrics.com",
-            "time": "2015-01-30 08:54:17"
+            "time": "2015-01-30 09:29:26"
         },
         {
             "name": "pimple/pimple",
