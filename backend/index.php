@@ -17,12 +17,12 @@ $inno->setVars(array(
     'appKey'        => getenv('INNO_APP_KEY'),
     'appName'       => getenv('INNO_APP_ID'),
     'groupId'       => getenv('INNO_COMPANY_ID'),
-    'apiUrl'        => getenv('INNO_API_HOST')
+    'apiUrl'        => getenv('INNO_API_HOST'),
+    'collectApp'    => getenv('INNO_APP_ID')
 ));
-$inno->setVar('collectApp', getenv('INNO_APP_ID'));
 
 $app->get('/', function() {
-    return '';
+    return 'Profile stream expected only as POST requests';
 });
 
 $app->post('/', function(Request $request) use($app, $inno, $cache) {
