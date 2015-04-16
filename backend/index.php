@@ -12,7 +12,9 @@ $app['debug'] = true;
 $inno = new Helper();
 $cache = new SimpleCache(getenv('INNO_DB_URL'));
 
-// Set environment values, which needed for work with Innometrics Cloud
+/* Init params from environment variables. Innometrics platform sets environment variables during install to Paas. 
+ * In case of manual install of backend part, you need to setup these manually.
+ */
 $inno->setVars(array(
     'bucketName'    => getenv('INNO_BUCKET_ID'),
     'appKey'        => getenv('INNO_APP_KEY'),
@@ -28,7 +30,7 @@ $app->get('/', function() {
 
 $app->post('/', function(Request $request) use($app, $inno, $cache) {
     try {
-        // Reading and parsing received data
+        // Reading and parsing income events stream
         $data = $inno->getStreamData($request->getContent());
     } catch (\ErrorException $error) {
         return $app->json(array(
@@ -43,7 +45,7 @@ $app->post('/', function(Request $request) use($app, $inno, $cache) {
         ));
     }
 
-    // Saving to cache url page, where be triggered event
+    // Caching received events (to be shown for debug purpose on frontend)
     $cache->add(json_encode(array(
         'profile'       => $data->profile->id,
         'created_at'    => $data->event->createdAt,
@@ -53,7 +55,7 @@ $app->post('/', function(Request $request) use($app, $inno, $cache) {
     )));
 
     try {
-        // Reading application settings
+        // Reading app settings from Profile Cloud
         $settings = $inno->getSettings();
     } catch (\ErrorException $error) {
         return $app->json(array(
@@ -61,7 +63,7 @@ $app->post('/', function(Request $request) use($app, $inno, $cache) {
         ));
     }
 
-    // Setting attributes for the profile in Profile Cloud
+    // Update person's profile with new attributes
     $result = $inno->setAttributes($settings);
     if ($result === false) {
         return $app->json(array(
@@ -75,7 +77,7 @@ $app->post('/', function(Request $request) use($app, $inno, $cache) {
     ));
 });
 
-// Return to GUI last 10 urls, saved in cache
+// Return to GUI last 10 events saved in cache
 $app->get('/last-ten-values', function() use($app, $cache) {
     $values = $cache->get();
     if (count($values) > 10) {
