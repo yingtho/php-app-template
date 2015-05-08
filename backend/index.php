@@ -1,93 +1,33 @@
 <?php
-
-use Symfony\Component\HttpFoundation\Request;
 use Innometrics\Helper;
 
-require_once('simple-cache.php');
 require_once('vendor/autoload.php');
 
-$app = new Silex\Application();
+$app = new Silex\Application(); // Allows easily build a application
 $app['debug'] = true;
 
-$inno = new Helper();
-$cache = new SimpleCache(getenv('INNO_DB_URL'));
+$inno = new Helper(); // Innometrics helper to work with profile cloud
 
-/* Init params from environment variables. Innometrics platform sets environment variables during install to Paas. 
+/**
+ * Init params from environment variables. Innometrics platform sets environment variables during install to Paas.
  * In case of manual install of backend part, you need to setup these manually.
  */
-$inno->setVars(array(
+$vars = array(
     'bucketName'    => getenv('INNO_BUCKET_ID'),
     'appKey'        => getenv('INNO_APP_KEY'),
     'appName'       => getenv('INNO_APP_ID'),
     'groupId'       => getenv('INNO_COMPANY_ID'),
     'apiUrl'        => getenv('INNO_API_HOST'),
     'collectApp'    => getenv('INNO_APP_ID')
-));
+);
+$inno->setVars($vars);
 
-$app->get('/', function() {
-    return 'Profile stream expected only as POST requests';
-});
-
-$app->post('/', function(Request $request) use($app, $inno, $cache) {
-    try {
-        // Reading and parsing income events stream
-        $data = $inno->getStreamData($request->getContent());
-    } catch (\ErrorException $error) {
-        return $app->json(array(
-            'error' => $error
-        ));
-    }
-
-    $dataIsOk = isset($data->profile->id, $data->event->definitionId, $data->event->createdAt, $data->data);
-    if(!$dataIsOk) {
-        return $app->json(array(
-            'error' => 'Stream data is not correct'
-        ));
-    }
-
-    // Caching received events (to be shown for debug purpose on frontend)
-    $cache->add(json_encode(array(
-        'profile'       => $data->profile->id,
-        'created_at'    => $data->event->createdAt,
-        'event'         => $data->event->definitionId,
-        'values'        => $data->data,
-        'link'          => $inno->webProfileAppUrl($inno->getVars())
-    )));
-
-    try {
-        // Reading app settings from Profile Cloud
-        $settings = $inno->getSettings();
-    } catch (\ErrorException $error) {
-        return $app->json(array(
-            'error' => $error
-        ));
-    }
-
-    // Update person's profile with new attributes
-    $result = $inno->setAttributes($settings);
-    if ($result === false) {
-        return $app->json(array(
-            'error' => 'Saving attributes failed'
-        ));
-    }
-
+// POST request to "/" is always expected to recieve stream with events
+$app->post('/', function() use($app) {
     return $app->json(array(
-        'error' => null,
-        'data' => $settings
+        'message' => 'Welcom to Innometrics profile cloud!'
     ));
 });
 
-// Return to GUI last 10 events saved in cache
-$app->get('/last-ten-values', function() use($app, $cache) {
-    $values = $cache->get();
-    if (count($values) > 10) {
-        $values = array_slice($values, -10);
-    }
-    $cache->set($values);
-    return $app->json(array(
-        'error' => null,
-        'data' => $values
-    ));
-});
-
+// Starting application
 $app->run();
