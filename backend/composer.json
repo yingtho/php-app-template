@@ -1,6 +1,6 @@
 {
     "require": {
         "silex/silex": "~1.1",
-        "innometrics/helper": "*"
+        "innometrics/helper": "dev-8433-new-architecture"
     }
 }
