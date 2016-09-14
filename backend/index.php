@@ -6,8 +6,6 @@ require_once('vendor/autoload.php');
 $app = new Silex\Application(); // Allows easily build a application
 $app['debug'] = true;
 
-$inno = new Helper(); // Innometrics helper to work with profile cloud
-
 /**
  * Init params from environment variables. Innometrics platform sets environment variables during install to Paas.
  * In case of manual install of backend part, you need to setup these manually.
@@ -20,7 +18,8 @@ $vars = array(
     'apiUrl'        => getenv('INNO_API_HOST'),
     'collectApp'    => getenv('INNO_APP_ID')
 );
-$inno->setVars($vars);
+
+$inno = new Helper($vars); // Innometrics helper to work with profile cloud
 
 // POST request to "/" is always expected to recieve stream with events
 $app->post('/', function() use($app) {
